@@ -6,6 +6,7 @@
 </template>
 
 <script lang="ts" setup>
+import { defineExpose } from 'vue'
 
 //props
 const props = defineProps({
@@ -22,6 +23,7 @@ const props = defineProps({
     default: 'obstacle'
   }
 })
+
 
 //grid logic
 const gridCanvas = ref<HTMLCanvasElement>()
@@ -55,7 +57,7 @@ onMounted(() => {
 
   //drawing the grid
   if (!ctx) return
-  ctx.strokeStyle = "#000";
+  ctx.strokeStyle = "#fff";
   
 
   for (let i = 0; i < props.rows; i++) {
@@ -150,7 +152,7 @@ const drawGrid = () => {
       const y = row * cellHeight
 
       if (gridStates[row][col] === 'obstacle') {
-        ctx.fillStyle = '#333'
+        ctx.fillStyle = 'blue'
         ctx.fillRect(x, y, cellWidth, cellHeight)
       } else if (gridStates[row][col] === 'start') {
         ctx.fillStyle = 'green'
@@ -158,17 +160,20 @@ const drawGrid = () => {
       } else if (gridStates[row][col] === 'end') {
         ctx.fillStyle = 'red'
         ctx.fillRect(x, y, cellWidth, cellHeight)
+      } else if (gridStates[row][col] === 'empty') {
+        ctx.fillStyle = 'black'
+        ctx.fillRect(x, y, cellWidth, cellHeight)
       }
 
       if (hoveredCell.value[0] === row && hoveredCell.value[1] === col) {
-        ctx.fillStyle = "rgba(250, 100, 100, 0.3)"
+        ctx.fillStyle = "rgba(100, 100, 100, 0.3)"
         ctx.fillRect(x, y, cellWidth, cellHeight)
       }
     }
   }
 
   //drawing the grid lines
-  ctx.strokeStyle = "#000"
+  ctx.strokeStyle = "#fff"
   for (let i = 0; i <= props.columns; i++) {
     const x = i * cellWidth
     ctx.beginPath()
@@ -209,6 +214,20 @@ const handleMouseMove = (e: MouseEvent) => {
 
   drawGrid()
 }
+
+//reset the grid
+const resetGrid = () => {
+  for (let i = 0; i < props.rows; i++) {
+    for(let j = 0; j < props.columns; j++) {
+      gridStates[i][j] = 'empty';
+    }
+  }
+  drawGrid()
+}
+//funcs
+defineExpose({
+  resetGrid,
+})
 
 
 </script>

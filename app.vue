@@ -3,6 +3,6 @@
   <Title>Shortest Path</Title>
   <Meta name="description" content="Shortest Path" />
   <div class="font-[Outfit] min-h-screen">
-    <Grid />
+    <NuxtPage />
   </div>
 </template>

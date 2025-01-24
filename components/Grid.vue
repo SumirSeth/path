@@ -16,6 +16,10 @@ const props = defineProps({
   columns: {
     type: Number,
     default: 20
+  },
+  mode: {
+    type: String,
+    default: 'obstacle'
   }
 })
 
@@ -72,6 +76,11 @@ onMounted(() => {
 
   //listen to mouse events
   gridCanvas.value?.addEventListener("click", handleClick)
+  gridCanvas.value?.addEventListener("mousemove", handleMouseMove)
+  gridCanvas.value?.addEventListener("mouseleave", () => {
+    hoveredCell.value = [-1, -1]
+    drawGrid()
+  })
 })
 
 const handleClick = (e: MouseEvent) => {
@@ -88,29 +97,53 @@ const handleClick = (e: MouseEvent) => {
   const col = Math.floor(x / cellWidth)
   const row = Math.floor(y / cellHeight)
 
-  gridStates[row][col] = gridStates[row][col] === 'empty' ? 'obstacle' : 'empty'
+  if (props.mode === 'start') {
+    for (let i = 0; i < props.rows; i++) {
+      for(let j = 0; j < props.columns; j++) {
+        if (gridStates[i][j] === 'start') {
+          gridStates[i][j] = 'empty';
+        }
+      }
+    }
+    gridStates[row][col] = 'start';
+  } else if (props.mode === 'end') {
+    for (let i = 0; i < props.rows; i++) {
+      for(let j = 0; j < props.columns; j++) {
+        if (gridStates[i][j] === 'end') {
+          gridStates[i][j] = 'empty';
+        }
+      }
+    }
+    gridStates[row][col] = 'end';
+  }
+   else if (props.mode === 'obstacle') {
+      gridStates[row][col] = gridStates[row][col] === 'empty' ? 'obstacle' : 'empty'
+  }
+
+
 
   drawGrid()
 
 }
 
 
-function drawGrid() {
+const drawGrid = () => {
   const canvas = gridCanvas.value
   if (!canvas) return
   const ctx = canvas.getContext("2d")
   if (!ctx) return
 
-  // Clear canvas
+  //clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-  // Dimensions
+  //dimensions
   const width = canvas.width
   const height = canvas.height
   const cellWidth = width / props.columns
   const cellHeight = height / props.rows
 
-  // Draw cells based on state
+  
+  //draw cells based on state
   for (let row = 0; row < props.rows; row++) {
     for (let col = 0; col < props.columns; col++) {
       const x = col * cellWidth
@@ -119,11 +152,22 @@ function drawGrid() {
       if (gridStates[row][col] === 'obstacle') {
         ctx.fillStyle = '#333'
         ctx.fillRect(x, y, cellWidth, cellHeight)
+      } else if (gridStates[row][col] === 'start') {
+        ctx.fillStyle = 'green'
+        ctx.fillRect(x, y, cellWidth, cellHeight)
+      } else if (gridStates[row][col] === 'end') {
+        ctx.fillStyle = 'red'
+        ctx.fillRect(x, y, cellWidth, cellHeight)
+      }
+
+      if (hoveredCell.value[0] === row && hoveredCell.value[1] === col) {
+        ctx.fillStyle = "rgba(250, 100, 100, 0.3)"
+        ctx.fillRect(x, y, cellWidth, cellHeight)
       }
     }
   }
 
-  // Draw grid lines
+  //drawing the grid lines
   ctx.strokeStyle = "#000"
   for (let i = 0; i <= props.columns; i++) {
     const x = i * cellWidth
@@ -141,6 +185,32 @@ function drawGrid() {
     ctx.stroke()
   }
 }
+
+
+//visual feedback for the user
+
+const hoveredCell = ref<[number, number]>([-1, -1])
+
+const handleMouseMove = (e: MouseEvent) => {
+  const canvas = gridCanvas.value
+  if (!canvas) return
+  const rect = canvas.getBoundingClientRect()
+
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+  
+  const cellWidth = canvas.width / props.columns
+  const cellHeight = canvas.height / props.rows
+
+  const col = Math.floor(x / cellWidth)
+  const row = Math.floor(y / cellHeight)
+
+  hoveredCell.value = [row, col]
+
+  drawGrid()
+}
+
+
 </script>
 
 <style>

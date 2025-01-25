@@ -1,13 +1,15 @@
 <template>
-  <div>
-    <canvas ref="gridCanvas" class="grid-canvas border border-spacing-1 border-solid border-slate-600 block m-auto">
-    </canvas>
+  <div ref="containerRef" class="w-full aspect-square max-w-2xl mx-auto">
+    <canvas 
+      ref="gridCanvas"
+      class="w-full h-full"
+    ></canvas>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { defineExpose } from 'vue'
-import { ref, reactive, nextTick } from 'vue'
+import { ref, reactive, nextTick, onMounted, onUnmounted } from 'vue'
 
 //props
 const props = defineProps({
@@ -27,6 +29,7 @@ const props = defineProps({
 
 
 //grid logic
+const containerRef = ref<HTMLDivElement>()
 const gridCanvas = ref<HTMLCanvasElement>()
 //each cell needs a state:
 //empty, start, end, obstacle/obstacle
@@ -41,45 +44,11 @@ const gridStates = reactive(Array(props.rows).fill(null).map(() =>
 ))
   
 onMounted(() => {
-  const canvas = gridCanvas.value
-  if (!canvas) return
-  const ctx = canvas.getContext("2d")
-
-
-  //dimensions
-  const width = 1000;
-  const height = 1000;
-
-  canvas.width = width;
-  canvas.height = height;
-
-  //calculate grid properties
-
-  const cellWidth = width / props.columns;
-  const cellHeight = height / props.rows;
-
-  //drawing the grid
-  if (!ctx) return
-  ctx.strokeStyle = "#fff";
-  
-
-  for (let i = 0; i < props.rows; i++) {
-    const x = i * cellWidth;
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, height);
-    ctx.stroke();
+  const resizeObserver = new ResizeObserver(updateCanvasSize);
+  if (containerRef.value) {
+    resizeObserver.observe(containerRef.value);
   }
-
-  for (let i = 0; i < props.columns; i++) {
-    const y = i * cellHeight;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
-    ctx.stroke();
-  }
-
-  //listen to mouse events
+  updateCanvasSize();
   gridCanvas.value?.addEventListener("click", handleClick)
   gridCanvas.value?.addEventListener("mousemove", handleMouseMove)
   gridCanvas.value?.addEventListener("mouseleave", () => {
@@ -87,6 +56,26 @@ onMounted(() => {
     drawGrid()
   })
 })
+
+onUnmounted(() => {
+  if (containerRef.value) {
+    resizeObserver.disconnect();
+  }
+});
+
+const updateCanvasSize = () => {
+  const container = containerRef.value;
+  const canvas = gridCanvas.value;
+  if (!container || !canvas) return;
+
+  const rect = container.getBoundingClientRect();
+  const size = Math.min(rect.width, rect.height);
+  
+  canvas.width = size;
+  canvas.height = size;
+  
+  drawGrid();
+};
 
 const handleClick = (e: MouseEvent) => {
   const canvas = gridCanvas.value
@@ -163,23 +152,19 @@ const drawGrid = () => {
       } else if (gridStates[row][col].state === 'end') {
         ctx.fillStyle = 'red'
         ctx.fillRect(x, y, cellWidth, cellHeight)
-      } else if (gridStates[row][col].state === 'empty') {
-        ctx.fillStyle = 'black'
+      // } else if (gridStates[row][col].state === 'empty') {
+      //   ctx.fillStyle = 'black'
         ctx.fillRect(x, y, cellWidth, cellHeight)
-      }
-      if (gridStates[row][col].state === 'path') {
+      } else if (gridStates[row][col].state === 'path') {
         ctx.fillStyle = 'yellow'
         ctx.fillRect(x, y, cellWidth, cellHeight)
-      }
-      if (gridStates[row][col].state === 'explored') {
+      } else if (gridStates[row][col].state === 'explored') {
         ctx.fillStyle = 'brown'
         ctx.fillRect(x, y, cellWidth, cellHeight)
-      }
-      if (gridStates[row][col].state === 'open') {
+      } else if (gridStates[row][col].state === 'open') {
         ctx.fillStyle = 'orange'
         ctx.fillRect(x, y, cellWidth, cellHeight)
-      }
-
+      } 
       if (hoveredCell.value[0] === row && hoveredCell.value[1] === col) {
         ctx.fillStyle = "rgba(100, 100, 100, 0.3)"
         ctx.fillRect(x, y, cellWidth, cellHeight)
@@ -245,6 +230,22 @@ const resetGrid = () => {
   }
   drawGrid()
 }
+const resetNonStartEndGrid = () => {
+  for (let i = 0; i < props.rows; i++) {
+    for(let j = 0; j < props.columns; j++) {
+      if (gridStates[i][j].state === 'path' || gridStates[i][j].state === 'explored') {
+        gridStates[i][j] = {
+          state: 'empty',
+          gCost: Infinity,
+          hCost: Infinity,
+          fCost: Infinity,
+          parent: null
+        }
+      }
+    }
+  }
+  drawGrid()
+}
 
 //utils
 const calculateHeuristic = (x1: number, y1: number, x2: number, y2: number) => {
@@ -259,6 +260,7 @@ const closedList = reactive(new Set<string>())
 const cellKey = (row: number, col: number) => `${row},${col}`
 
 const findPath = async () => {
+  resetNonStartEndGrid();
   openList.value = [];
   closedList.clear();
   

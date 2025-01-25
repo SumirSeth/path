@@ -27,6 +27,22 @@ const props = defineProps({
   }
 })
 
+const getRandomPosition = () => ({
+  row: Math.floor(Math.random() * props.rows),
+  col: Math.floor(Math.random() * props.columns)
+})
+const initializeStartEnd = () => {
+  // Get random start position
+  const start = getRandomPosition()
+  let end
+  
+  do {
+    end = getRandomPosition()
+  } while (end.row === start.row && end.col === start.col)
+  
+  gridStates[start.row][start.col].state = 'start'
+  gridStates[end.row][end.col].state = 'end'
+}
 
 //grid logic
 const containerRef = ref<HTMLDivElement>()
@@ -55,6 +71,7 @@ onMounted(() => {
     hoveredCell.value = [-1, -1]
     drawGrid()
   })
+  initializeStartEnd(); 
 })
 
 onUnmounted(() => {
@@ -120,6 +137,26 @@ const handleClick = (e: MouseEvent) => {
 
 }
 
+const drawCell = (ctx: CanvasRenderingContext2D, row: number, col: number) => {
+  const cellWidth = ctx.canvas.width / props.columns;
+  const cellHeight = ctx.canvas.height / props.rows;
+  const x = col * cellWidth;
+  const y = row * cellHeight;
+  
+  // Draw cell background based on state
+  const state = gridStates[row][col].state;
+  
+  // Draw cell text
+  if (state === 'start' || state === 'end') {
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `${cellWidth * 0.55}px Sans-Serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const text = state === 'start' ? 'S' : 'E';
+    ctx.fillText(text, x + cellWidth/2, y + cellHeight/2);
+  }
+}
+
 
 const drawGrid = () => {
   const canvas = gridCanvas.value
@@ -129,6 +166,8 @@ const drawGrid = () => {
 
   //clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+  
 
   //dimensions
   const width = canvas.width
@@ -188,6 +227,11 @@ const drawGrid = () => {
     ctx.moveTo(0, y)
     ctx.lineTo(width, y)
     ctx.stroke()
+  }
+  for (let row = 0; row < props.rows; row++) {
+    for (let col = 0; col < props.columns; col++) {
+      drawCell(ctx, row, col);
+    }
   }
 }
 

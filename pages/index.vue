@@ -5,6 +5,8 @@
       <button @click="mode = 'end'">Set End</button>
       <button @click="mode = 'obstacle'">Set Obstacle</button>
       <button @click="resetGrid">Reset Grid</button>
+      <button @click="findPath">Find Path</button>
+
     </div>
     <Grid ref="grid" :rows="15" :columns="15" :mode="mode" />
   </div>
@@ -13,6 +15,7 @@
 <script lang="ts" setup>
 import Grid from "../components/Grid.vue";
 import { ref } from 'vue';
+// import findPath from "../components/Grid.vue";
 
 type GridInstance = InstanceType<typeof Grid>;
 
@@ -28,6 +31,14 @@ const resetGrid = () => {
   console.log(grid.value); // Should log the Grid instance
   if (grid.value) {
     grid.value.resetGrid();
+  } else {
+    console.error("Grid component not found");
+  }
+};
+
+const findPath = () => {
+  if (grid.value) {
+    grid.value.findPath();
   } else {
     console.error("Grid component not found");
   }

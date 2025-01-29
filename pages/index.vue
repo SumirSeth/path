@@ -75,6 +75,7 @@
       <div class="mt-8 text-gray-400 text-center text-sm">
         <p>Click Draw Walls to create walls • Click Set Start or Set End to set them<br>Click Reset Grid to reset the grid after each use</p>
         <p>Made with ❤️ by <a class="underline italic" href="https://github.com/sumirseth" target="_blank">Sumir</a></p>
+        <p>Active Visitors: {{ visitors }}</p>
       </div>
     </div>
   </div>
@@ -83,6 +84,7 @@
 <script lang="ts" setup>
 import Grid from "../components/Grid.vue";
 import { ref } from 'vue';
+const { visitors } = useVisitors();
 
 type GridInstance = InstanceType<typeof Grid>;
 type Mode = 'start' | 'end' | 'obstacle';
